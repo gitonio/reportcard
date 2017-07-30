@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
-import SimpleStorageContract from '../build/contracts/SimpleStorage.json'
+import School from '../build/contracts/School.json'
+import ReportCard from '../build/contracts/ReportCard.json'
 import Web3 from 'web3'
 
 import './css/oswald.css'
@@ -12,7 +13,11 @@ class App extends Component {
     super(props)
 
     this.state = {
-      storageValue: 0
+      Name: '',
+      SchoolAddress: '',
+      ReportCardAddress: '',
+      ReportCardAddress2: '',
+      Students: []
     }
   }
 
@@ -30,32 +35,83 @@ class App extends Component {
     // Get the RPC provider and setup our SimpleStorage contract.
     const provider = new Web3.providers.HttpProvider('http://localhost:8545')
     const contract = require('truffle-contract')
-    const simpleStorage = contract(SimpleStorageContract)
-    simpleStorage.setProvider(provider)
+    const school = contract(School)
+    const rc = contract(ReportCard)
+    school.setProvider(provider)
+    rc.setProvider(provider)
 
     // Get Web3 so we can get our accounts.
     const web3RPC = new Web3(provider)
 
     // Declaring this for later so we can chain functions on SimpleStorage.
-    var simpleStorageInstance
-
+    var schoolInstance
+    var rcInstance
+    var studs = []
     // Get accounts.
     web3RPC.eth.getAccounts(function(error, accounts) {
       console.log(accounts)
 
-      simpleStorage.deployed().then(function(instance) {
-        simpleStorageInstance = instance
-
-        // Stores a value of 5.
-        return simpleStorageInstance.set(5, {from: accounts[0]})
-      }).then(function(result) {
-        // Get the value from the contract to prove it worked.
-        return simpleStorageInstance.get.call(accounts[0])
+      school.deployed().then(function(instance) {
+        schoolInstance = instance
+        return schoolInstance.getSchoolName();
       }).then(function(result) {
         // Update state with the result.
-        return self.setState({ storageValue: result.c[0] })
+        self.setState({ Name: web3RPC.toAscii(result) })
+        return schoolInstance.address;
+      }).then(function(result){
+        return self.setState({SchoolAddress: result})
       })
-    })
+ 
+       rc.new(accounts[1], {from:accounts[1], gas: 500000}).then(function(instance){
+
+        rcInstance = instance
+        console.log(instance)
+        return rcInstance.address;
+      }).then(function(result){
+        self.setState({ReportCardAddress: result});
+        return rcInstance.enroll(schoolInstance.address, 'Novak', {from:accounts[0], gas:500000});
+        //schoolInstance.enterGrades(result, 'Math', 4, {from:accounts[0], gas:500000});
+      }).then(function(result){
+        console.log('enroll:', result);
+        //schoolInstance.enterGrades()
+      })
+ 
+
+   
+       rc.new(accounts[1], {from:accounts[1], gas: 500000}).then(function(instance){
+
+        rcInstance = instance
+        console.log(instance)
+        return rcInstance.address;
+      }).then(function(result){
+        self.setState({ReportCardAddress2: result});
+        return rcInstance.enroll(schoolInstance.address, 'Skylar', {from:accounts[0], gas:500000});
+        //schoolInstance.enterGrades(result, 'Math', 4, {from:accounts[0], gas:500000});
+      }).then(function(){
+
+        return schoolInstance.getNumberOfReportCards.call();
+      }).then(function(result){
+              console.log('cards:', result);
+              for (var index = 0; index < result; index++) {
+                schoolInstance.getStudentName.call(index).then(function(name){
+                    studs.push(name);
+                });
+                
+                //var element = array[index];
+                console.log('number:', index);
+        
+            }
+            console.log(studs);
+            self.setState({Students: studs });
+      })
+/*
+      for (var index = 0; index < array.length; index++) {
+        var element = array[index];
+        
+      }
+*/ 
+
+   })
   }
 
   render() {
@@ -76,9 +132,11 @@ class App extends Component {
               <h1>Good to Go!</h1>
               <p>Your Truffle Box is installed and ready.</p>
               <h2>Smart Contract Example</h2>
-              <p>The below will show a stored value of 5 by default if your contracts compiled and migrated successfully.</p>
-              <p>Try changing the value stored on <strong>line 50</strong> of App.js.</p>
-              <p>The stored value is: {this.state.storageValue}</p>
+              <p>The below will show a school name by default if your contracts compiled and migrated successfully.</p>
+              <p>The school name is: {this.state.Name}</p>
+              <p>The school address is: {this.state.SchoolAddress}</p>
+              <p>The report card address of the 1st student is: {this.state.ReportCardAddress}</p>
+              <p>The report card address of the 2nd student is: {this.state.ReportCardAddress2}</p>
             </div>
           </div>
         </main>

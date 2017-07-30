@@ -9,7 +9,7 @@ require('dotenv').config({silent: true});
 
 const jest = require('jest');
 const argv = process.argv.slice(2);
-
+console.log('argv:'+argv);
 // Watch unless on CI or in coverage mode
 if (!process.env.CI && argv.indexOf('--coverage') < 0) {
   argv.push('--watch');
@@ -18,7 +18,9 @@ if (!process.env.CI && argv.indexOf('--coverage') < 0) {
 // A temporary hack to clear terminal correctly.
 // You can remove this after updating to Jest 18 when it's out.
 // https://github.com/facebook/jest/pull/2230
+/*
 var realWrite = process.stdout.write;
+
 var CLEAR = process.platform === 'win32' ? '\x1Bc' : '\x1B[2J\x1B[3J\x1B[H';
 process.stdout.write = function(chunk, encoding, callback) {
   if (chunk === '\x1B[2J\x1B[H') {
@@ -27,5 +29,7 @@ process.stdout.write = function(chunk, encoding, callback) {
   return realWrite.call(this, chunk, encoding, callback);
 };
 
+*/
+console.log('argv:'+argv);
 
 jest.run(argv);
